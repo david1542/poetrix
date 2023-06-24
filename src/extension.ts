@@ -3,7 +3,7 @@
 import * as fs from "fs";
 import * as vscode from "vscode";
 import { TerminalFile } from "./config";
-import { checkForToml } from "./utils";
+import { checkForToml, formatMessage } from "./utils";
 import path = require("path");
 
 async function setDefaultPythonInterpreter(pythonPath: string) {
@@ -15,6 +15,21 @@ async function setDefaultPythonInterpreter(pythonPath: string) {
       vscode.ConfigurationTarget.Workspace
     );
 }
+
+function runCommand(command: string, cwd: string, show: boolean = true): vscode.Terminal {
+  const terminal = vscode.window.createTerminal({
+    name: "Poetrix",
+    cwd,
+  });
+  terminal.sendText(command);
+  if (show) {
+    terminal.show();
+  } else {
+	terminal.hide();
+  }
+  return terminal;
+}
+
 
 export function activate(context: vscode.ExtensionContext) {
   // Get the extension's storage path
@@ -37,19 +52,12 @@ export function activate(context: vscode.ExtensionContext) {
       }
       if (!checkForToml(uri.fsPath)) {
         vscode.window.showErrorMessage(
-          "No pyproject.toml file found in the selected folder."
+          formatMessage("No pyproject.toml file found in the selected folder.")
         );
         return;
       }
-
-	  // Check if the folderPath contains a pyproject.toml file
-      // If it does, then activate the environment
-      const terminal = vscode.window.createTerminal({
-        name: "Poetrix",
-        cwd: uri.fsPath,
-      });
-      terminal.sendText(`poetry update`);
-      terminal.show();
+	  vscode.window.showInformationMessage(formatMessage("Updating dependencies..."));
+	  runCommand("poetry update", uri.fsPath);
     }
   );
 
@@ -59,55 +67,53 @@ export function activate(context: vscode.ExtensionContext) {
       if (!uri) {
         return;
       }
-      if (!checkForToml(uri.fsPath)) {
+	  if (!checkForToml(uri.fsPath)) {
         vscode.window.showErrorMessage(
-          "No pyproject.toml file found in the selected folder."
+          formatMessage("No pyproject.toml file found in the selected folder.")
         );
         return;
       }
-
-	  // Check if the folderPath contains a pyproject.toml file
-      // If it does, then activate the environment
-      const terminal = vscode.window.createTerminal({
-        name: "Poetrix",
-        cwd: uri.fsPath,
-      });
-      terminal.sendText(`poetry install`);
-      terminal.show();
+	  vscode.window.showInformationMessage(formatMessage("Installing dependencies..."));
+      runCommand("poetry install", uri.fsPath);
     }
   );
 
   const activateDisposable = vscode.commands.registerCommand(
     "poetrix.activateEnvironment",
     async (uri: vscode.Uri) => {
+      terminalFile.flush();
+
       if (!uri) {
         return;
       }
       if (!checkForToml(uri.fsPath)) {
         vscode.window.showErrorMessage(
-          "No pyproject.toml file found in the selected folder."
+          formatMessage("No pyproject.toml file found in the selected folder.")
         );
         return;
       }
+	  vscode.window.showInformationMessage(formatMessage("Activating environment..."));
+
       // Check if the folderPath contains a pyproject.toml file
       // If it does, then activate the environment
-      const terminal = vscode.window.createTerminal({
-        name: "Poetrix",
-        cwd: uri.fsPath,
-      });
-      terminal.sendText(`poetry env info --path > "${terminalFile.filePath}"`);
-      terminal.sendText(`poetry shell`);
-      terminal.show();
-
-      // Read the file and remove the newline character
+	  runCommand(`poetry env info --path > "${terminalFile.filePath}"`, uri.fsPath, false);
+	  
+	  // Read the file and remove the newline character
       const envPath = (await terminalFile.readGracefully()).slice(0, -1);
-      const pythonPath = `${envPath}/bin/python`;
+	  if (!fs.existsSync(envPath)) {
+		vscode.window.showErrorMessage(formatMessage("No virtual environment found. Make sure you have run 'poetry install' first."));
+		return;
+	  }
+
+	  const envName = path.basename(envPath);
+	  const pythonPath = `${envPath}/bin/python`;
+      runCommand("poetry shell", uri.fsPath);
 
       await setDefaultPythonInterpreter(pythonPath);
       await vscode.commands.executeCommand("python.setInterpreter");
 
-      // Clean the file, for future times
-      terminalFile.flush();
+
+	  vscode.window.showInformationMessage(formatMessage(`Activated ${envName}.`));
     }
   );
 

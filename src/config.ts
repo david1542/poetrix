@@ -20,7 +20,7 @@ export class TerminalFile {
         return fs.readFileSync(this.filePath, "utf8");
     }
 
-    public async readGracefully(interval: number = 500, maxRetries: number = 20): Promise<string> {
+    public async readGracefully(interval: number = 500, maxRetries: number = 6): Promise<string> {
         // Wait for the file to contain data, with limit of maxRetries * interval seconds
         let counter = 0;
         while (!this.read() && counter < maxRetries) {
