@@ -6,9 +6,7 @@ export class TerminalFile {
 
     constructor(filePath: string) {
         this.filePath = filePath;
-        if (!fs.existsSync(filePath)) {
-            fs.writeFileSync(filePath, "");
-        }
+        this.create();
     }
 
     public create(): void {

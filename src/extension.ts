@@ -3,32 +3,8 @@
 import * as fs from "fs";
 import * as vscode from "vscode";
 import { TerminalFile } from "./config";
-import { checkForToml, formatMessage } from "./utils";
+import { checkForToml, formatMessage, runCommand, setDefaultPythonInterpreter } from "./utils";
 import path = require("path");
-
-async function setDefaultPythonInterpreter(pythonPath: string) {
-  await vscode.workspace
-    .getConfiguration()
-    .update(
-      "python.defaultInterpreterPath",
-      pythonPath,
-      vscode.ConfigurationTarget.Workspace
-    );
-}
-
-function runCommand(command: string, cwd: string, show: boolean = true): vscode.Terminal {
-  const terminal = vscode.window.createTerminal({
-    name: "Poetrix",
-    cwd,
-  });
-  terminal.sendText(command);
-  if (show) {
-    terminal.show();
-  } else {
-	terminal.hide();
-  }
-  return terminal;
-}
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -56,8 +32,10 @@ export function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
-	  vscode.window.showInformationMessage(formatMessage("Updating dependencies..."));
-	  runCommand("poetry update", uri.fsPath);
+      vscode.window.showInformationMessage(
+        formatMessage("Updating dependencies...")
+      );
+      runCommand("poetry update", uri.fsPath);
     }
   );
 
@@ -67,13 +45,15 @@ export function activate(context: vscode.ExtensionContext) {
       if (!uri) {
         return;
       }
-	  if (!checkForToml(uri.fsPath)) {
+      if (!checkForToml(uri.fsPath)) {
         vscode.window.showErrorMessage(
           formatMessage("No pyproject.toml file found in the selected folder.")
         );
         return;
       }
-	  vscode.window.showInformationMessage(formatMessage("Installing dependencies..."));
+      vscode.window.showInformationMessage(
+        formatMessage("Installing dependencies...")
+      );
       runCommand("poetry install", uri.fsPath);
     }
   );
@@ -92,28 +72,39 @@ export function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
-	  vscode.window.showInformationMessage(formatMessage("Activating environment..."));
+      vscode.window.showInformationMessage(
+        formatMessage("Activating environment...")
+      );
 
       // Check if the folderPath contains a pyproject.toml file
       // If it does, then activate the environment
-	  runCommand(`poetry env info --path > "${terminalFile.filePath}"`, uri.fsPath, false);
-	  
-	  // Read the file and remove the newline character
-      const envPath = (await terminalFile.readGracefully()).slice(0, -1);
-	  if (!fs.existsSync(envPath)) {
-		vscode.window.showErrorMessage(formatMessage("No virtual environment found. Make sure you have run 'poetry install' first."));
-		return;
-	  }
+      runCommand(
+        `poetry env info --path > "${terminalFile.filePath}"`,
+        uri.fsPath,
+        false
+      );
 
-	  const envName = path.basename(envPath);
-	  const pythonPath = `${envPath}/bin/python`;
+      // Read the file and remove the newline character
+      const envPath = (await terminalFile.readGracefully()).slice(0, -1);
+      if (!fs.existsSync(envPath)) {
+        vscode.window.showErrorMessage(
+          formatMessage(
+            "No virtual environment found. Make sure you have run 'poetry install' first."
+          )
+        );
+        return;
+      }
+
+      const envName = path.basename(envPath);
+      const pythonPath = `${envPath}/bin/python`;
       runCommand("poetry shell", uri.fsPath);
 
       await setDefaultPythonInterpreter(pythonPath);
       await vscode.commands.executeCommand("python.setInterpreter");
 
-
-	  vscode.window.showInformationMessage(formatMessage(`Activated ${envName}.`));
+      vscode.window.showInformationMessage(
+        formatMessage(`Activated ${envName}.`)
+      );
     }
   );
 
