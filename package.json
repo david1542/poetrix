@@ -1,5 +1,6 @@
 {
   "name": "poetrix",
+  "publisher": "dudulasry",
   "displayName": "poetrix",
   "description": "An extension that ease the work with Poetry",
   "version": "0.0.1",
@@ -10,14 +11,41 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:poetrix.helloWorld"
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "poetrix.updateDependencies",
+          "group": "3_files",
+          "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "poetrix.installDependencies",
+          "group": "3_files",
+          "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "poetrix.activateEnvironment",
+          "group": "3_files",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "poetrix.helloWorld",
-        "title": "Hello World"
+        "command": "poetrix.updateDependencies",
+        "title": "Update Poetry Dependencies"
+      },
+      {
+        "command": "poetrix.installDependencies",
+        "title": "Install Poetry Dependencies"
+      },
+      {
+        "command": "poetrix.activateEnvironment",
+        "title": "Activate Poetry Environment"
       }
     ]
   },
