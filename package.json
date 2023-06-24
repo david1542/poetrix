@@ -1,6 +1,10 @@
 {
   "name": "poetrix",
   "publisher": "dudulasry",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/david1542/poetrix"
+  },
   "displayName": "poetrix",
   "description": "An extension that ease the work with Poetry",
   "version": "0.0.1",

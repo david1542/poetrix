@@ -1,6 +1,6 @@
 on: push
 
-name: Run tests
+name: Tests
 jobs:
   test:
     runs-on: ubuntu-latest
